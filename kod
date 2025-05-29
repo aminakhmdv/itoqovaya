@@ -1,0 +1,183 @@
+#include <stdio.h>
+#include <math.h>
+
+double f(double x)
+{
+	return 3 * x * sin(x * x * x) + 3 * x;
+}
+
+double kvadr_f(double a, double b, double (*f)(double)) {
+
+	return ((b - a) / 6) * (f(a) + 4 * f((a + b) / 2) + f(b));
+}
+
+int sign(double x) {
+	if (x > 0)
+		return 1;
+	if (x < 0)
+		return -1;
+	return 0;
+}
+
+double itog(double eps, double alpha, double (*f)(double)) {
+
+	double x = 0.0;
+
+	double sum = 0.0, before_sum = 0.0;
+
+	double h = 0.1;
+
+	double left = 0.0, right;
+
+	double right_2 = 0.0;
+
+	double x_pribl = 0.0;
+
+	double sum_pribl = 0.0;
+
+	int steps = 0, chord = 0;
+
+	double sredn = 0.0, qarant = 0.0;
+
+	double x_min = 0.0, x_max = 0.0;
+
+	while (1) 
+	{
+		right = left + h;
+
+		double I1 = kvadr_f(left, left + h, f);
+		double I2 = kvadr_f(left, (left + right) / 2.0, f) + kvadr_f((left + right) / 2.0, right, f);;
+
+		double delta = fabs((I2 - I1) / 15.0);
+
+		if (delta < eps) 
+		{
+			before_sum = sum;
+			sum = sum + I2;
+
+			qarant = qarant + fabs(delta);
+
+			sredn = sredn + delta;
+			sredn = fabs(sredn);
+
+			steps++;
+
+			if (fabs(sum - alpha) < eps) 
+			{
+				x = right;
+				break;
+			}
+
+			if ((sum - alpha) > eps)
+			{
+				x_pribl = left;
+				sum_pribl = before_sum;
+				right_2 = right;
+				break;
+			}
+			left = right; 
+
+		}
+		double chi = pow(delta / eps, 1.0 / 5.0);
+
+		if (chi > 10)
+		{
+			chi = 10;
+		}
+
+		if (chi < 0.1)
+		{
+			chi = 0.1;
+		}
+
+		h = 0.95 * h / chi;
+	}
+
+	double fa, fb, fc, c[2];
+
+	double epsilon = 1.e-9;
+
+	double a = x_pribl;
+	double b = right_2;
+
+	int i = 0, ifa, ifb, ifc, k;
+
+	c[0] = a; 
+	c[1] = b;
+
+	fa = sum_pribl - alpha;
+	fb = sum - alpha;
+
+	ifa = sign(fa);
+	ifb = sign(fb);
+
+	if (ifa * ifb != -1)
+	{
+		return b;
+	}
+
+	for (k = 1; fabs(c[1] - c[0]) > epsilon; k++)
+	{
+		i = !i;
+		c[i] = (a * fb - b * fa) / (fb - fa);
+
+		fc = sum_pribl + kvadr_f(a, c[i], f) - alpha;
+
+		ifc = sign(fc);
+
+		chord++;
+
+		if (fabs(fc) < epsilon) 
+		{
+			x = c[i];
+			break;
+		}
+
+		if (ifc * ifa == 1)
+		{
+			a = c[i];
+
+			fa = fc;
+
+			sum_pribl += kvadr_f(x_pribl, c[i], f);
+
+			x_pribl = c[i];
+		}
+		else 
+		{
+			b = c[i];
+			fb = fc;
+		}
+		c[0] = a;
+		c[1] = b;
+	}
+
+	x = (c[0] + c[1]) / 2;
+
+	fc = sum_pribl + kvadr_f(x_pribl, x, f) - alpha;
+
+	double function = f(x);
+
+	x_min = x - fc / function - qarant / function;
+	x_max = x - fc / function + qarant / function;
+
+	printf("qarant: %le\n", qarant);
+	printf("srend: %le\n", sredn);
+	printf("x_min: %lf\n", x_min);
+	printf("x_max: %lf\n", x_max);
+	printf("%d\n", steps);
+	printf("%d\n", chord);
+	return x;
+}
+
+int main() {
+	double eps, alpha;
+	printf("������ ��ᨫ��\n");
+	scanf_s("%lf", &eps);
+	printf("������ ����: \n");
+	scanf_s("%lf", &alpha);
+	double x_osn = itog(eps, alpha, f);
+	printf("�=%.16lf\n", x_osn);
+	return 0;
+}
+
